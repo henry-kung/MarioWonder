@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mario Wonder — Wonder Seed Tracker</title>
+  <style>
+    :root {
+      --bg: #0d0b1e;
+      --card: #16143a;
+      --card-hover: #1e1b4b;
+      --gold: #ffd700;
+      --gold-glow: rgba(255, 215, 0, 0.4);
+      --text: #e8e4ff;
+      --muted: #8884aa;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 80% 40% at 50% 0%, #1a1060 0%, transparent 60%),
+        radial-gradient(circle at 20% 80%, #0a1540 0%, transparent 40%);
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 2.5rem 1rem 1.5rem;
+      position: relative;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,215,0,0.06) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .seed-icon-large {
+      width: 40px; height: 40px;
+      display: inline-block;
+      background: radial-gradient(circle at 35% 35%, #fff7aa, #ffd700 50%, #ff9500);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      box-shadow: 0 0 20px rgba(255,215,0,0.7), 0 0 40px rgba(255,215,0,0.3);
+      flex-shrink: 0;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffd700, #ffaa00, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Overall Progress ── */
+    .overall-stats {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-block {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.2rem;
+    }
+
+    .overall-bar-wrap {
+      width: min(500px, 90vw);
+      margin: 0 auto;
+    }
+
+    .progress-bar-bg {
+      height: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd700, #ffaa00);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 8px rgba(255,215,0,0.5);
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      padding: 0 1rem 2rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(255,215,0,0.12);
+      border-color: rgba(255,215,0,0.4);
+      color: var(--gold);
+    }
+
+    .btn.danger:hover {
+      background: rgba(255,80,80,0.12);
+      border-color: rgba(255,80,80,0.4);
+      color: #ff6060;
+    }
+
+    /* ── World Grid ── */
+    .worlds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+      padding: 0 1.25rem 3rem;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* ── World Card ── */
+    .world-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .world-card:hover {
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .world-header {
+      padding: 1rem 1.25rem 0.85rem;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .world-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--world-color, #4CAF50);
+      opacity: 0.07;
+    }
+
+    .world-emoji {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+
+    .world-title-group {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .world-number {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.7;
+      color: var(--world-color, #4CAF50);
+    }
+
+    .world-name {
+      font-size: 1rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .world-progress-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    .world-progress-text .frac {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .world-progress-text .pct {
+      font-size: 0.7rem;
+      color: var(--world-color, #4CAF50);
+    }
+
+    .world-chevron {
+      font-size: 0.7rem;
+      color: var(--muted);
+      transition: transform 0.25s;
+      flex-shrink: 0;
+      margin-left: 0.25rem;
+    }
+
+    .world-card.open .world-chevron {
+      transform: rotate(180deg);
+    }
+
+    .world-bar-wrap {
+      padding: 0 1.25rem 0.75rem;
+      position: relative;
+    }
+
+    .world-bar-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--world-color, #4CAF50);
+      opacity: 0.05;
+    }
+
+    .world-bar-bg {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .world-bar-fill {
+      height: 100%;
+      background: var(--world-color, #4CAF50);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 6px var(--world-color, #4CAF50);
+    }
+
+    /* ── Course List ── */
+    .course-list {
+      display: none;
+      padding: 0 0 0.5rem;
+    }
+
+    .world-card.open .course-list {
+      display: block;
+    }
+
+    .course-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+
+    .course-row:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .course-type-badge {
+      font-size: 0.6rem;
+      padding: 0.15em 0.5em;
+      border-radius: 999px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+      width: 52px;
+      text-align: center;
+    }
+
+    .type-course    { background: rgba(100,180,255,0.15); color: #64b4ff; }
+    .type-boss      { background: rgba(255,100,100,0.15); color: #ff6464; }
+    .type-challenge { background: rgba(180,100,255,0.15); color: #b464ff; }
+    .type-trial     { background: rgba(100,255,180,0.15); color: #64ffb4; }
+    .type-ko        { background: rgba(255,165,0,0.15);   color: #ffa500; }
+    .type-special   { background: rgba(255,215,0,0.15);   color: #ffd700; }
+    .type-search    { background: rgba(255,200,80,0.15);  color: #ffc850; }
+    .type-palace    { background: rgba(255,215,0,0.18);   color: #ffe566; }
+    .type-break     { background: rgba(100,255,220,0.15); color: #64ffd4; }
+    .type-cabin     { background: rgba(180,140,100,0.2);  color: #c8a878; }
+    .type-shop      { background: rgba(100,220,100,0.15); color: #64dc64; }
+    .type-rescue    { background: rgba(255,140,0,0.18);   color: #ffaa40; }
+    .type-observe   { background: rgba(80,180,255,0.15);  color: #50b4ff; }
+    .type-castle    { background: rgba(100,50,180,0.2);   color: #a080e0; }
+
+    .diff-stars {
+      font-size: 0.6rem;
+      color: rgba(255,215,0,0.55);
+      flex-shrink: 0;
+      letter-spacing: -0.5px;
+      margin-left: 0.3rem;
+    }
+
+    .course-name {
+      flex: 1;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      min-width: 0;
+    }
+
+    .course-row.all-collected .course-name {
+      color: var(--muted);
+    }
+
+    .seeds-wrap {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    /* ── Seed Button ── */
+    .seed-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,215,0,0.3);
+      background: rgba(255,215,0,0.05);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 0;
+    }
+
+    .seed-btn::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      background: rgba(255,215,0,0.2);
+      transition: all 0.2s;
+    }
+
+    .seed-btn:hover {
+      border-color: rgba(255,215,0,0.7);
+      background: rgba(255,215,0,0.1);
+      transform: scale(1.1);
+    }
+
+    .seed-btn:hover::after {
+      background: rgba(255,215,0,0.5);
+    }
+
+    .seed-btn.collected {
+      border-color: var(--gold);
+      background: radial-gradient(circle at 40% 35%, #fff9c4, #ffd700 60%);
+      box-shadow: 0 0 10px var(--gold-glow), 0 0 20px rgba(255,215,0,0.2);
+    }
+
+    .seed-btn.collected::after {
+      background: rgba(120, 80, 0, 0.5);
+    }
+
+    .seed-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Royal seed — red/crimson, from defeating a boss */
+    .seed-btn.royal-seed {
+      border-color: rgba(220,60,60,0.45);
+      background: rgba(220,60,60,0.05);
+    }
+    .seed-btn.royal-seed::after {
+      background: rgba(220,60,60,0.2);
+    }
+    .seed-btn.royal-seed:hover {
+      border-color: rgba(220,60,60,0.85);
+      background: rgba(220,60,60,0.12);
+    }
+    .seed-btn.royal-seed:hover::after {
+      background: rgba(220,60,60,0.5);
+    }
+    .seed-btn.royal-seed.collected {
+      border-color: #e04040;
+      background: radial-gradient(circle at 40% 35%, #ffd4d4, #e04040 60%);
+      box-shadow: 0 0 10px rgba(220,60,60,0.55), 0 0 20px rgba(220,60,60,0.2);
+    }
+    .seed-btn.royal-seed.collected::after {
+      background: rgba(80,0,0,0.5);
+    }
+
+    /* Secret seed — purple instead of gold */
+    .seed-btn.secret-seed {
+      border-color: rgba(180,100,255,0.35);
+      background: rgba(180,100,255,0.05);
+    }
+    .seed-btn.secret-seed::after {
+      background: rgba(180,100,255,0.2);
+    }
+    .seed-btn.secret-seed:hover {
+      border-color: rgba(180,100,255,0.8);
+      background: rgba(180,100,255,0.12);
+    }
+    .seed-btn.secret-seed:hover::after {
+      background: rgba(180,100,255,0.5);
+    }
+    .seed-btn.secret-seed.collected {
+      border-color: #b464ff;
+      background: radial-gradient(circle at 40% 35%, #f0d4ff, #b464ff 60%);
+      box-shadow: 0 0 10px rgba(180,100,255,0.5), 0 0 20px rgba(180,100,255,0.2);
+    }
+    .seed-btn.secret-seed.collected::after {
+      background: rgba(60,0,100,0.5);
+    }
+
+    /* Seed legend */
+    .seed-legend {
+      display: flex;
+      gap: 1.25rem;
+      justify-content: center;
+      align-items: center;
+      padding: 0 1rem 1.5rem;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .legend-seed {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid;
+      display: inline-block;
+    }
+    .legend-seed.gold   { border-color: rgba(255,215,0,0.6);   background: rgba(255,215,0,0.1); }
+    .legend-seed.purple { border-color: rgba(180,100,255,0.6); background: rgba(180,100,255,0.1); }
+    .legend-seed.red    { border-color: rgba(220,60,60,0.6);   background: rgba(220,60,60,0.1); }
+
+    /* Tooltip */
+    .seed-btn[title]:hover::before {
+      content: attr(title);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a3e;
+      color: var(--text);
+      font-size: 0.7rem;
+      padding: 0.3em 0.6em;
+      border-radius: 6px;
+      white-space: nowrap;
+      max-width: 200px;
+      white-space: normal;
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+      border: 1px solid rgba(255,255,255,0.1);
+      line-height: 1.3;
+    }
+
+    /* ── Complete checkmark ── */
+    .world-complete-badge {
+      display: none;
+      font-size: 0.7rem;
+      background: var(--world-color);
+      color: #000;
+      font-weight: 800;
+      padding: 0.1em 0.5em;
+      border-radius: 999px;
+      margin-left: 0.4rem;
+    }
+
+    .world-card.complete .world-complete-badge {
+      display: inline-block;
+    }
+
+    /* ── Completion celebration ── */
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.06; }
+      50% { opacity: 0.14; }
+    }
+
+    .world-card.complete .world-header::before {
+      animation: shimmer 2s ease-in-out infinite;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="title-wrap">
+    <span class="seed-icon-large"></span>
+    <h1>Wonder Seed Tracker</h1>
+    <span class="seed-icon-large" style="animation-delay: -1.5s"></span>
+  </div>
+  <p class="subtitle">Super Mario Bros. Wonder</p>
+  <div class="overall-stats">
+    <div class="stat-block">
+      <div class="stat-number" id="total-collected">0</div>
+      <div class="stat-label">Seeds Found</div>
+    </div>
+    <div class="overall-bar-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="overall-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-number" id="total-pct">0%</div>
+      <div class="stat-label">Complete</div>
+    </div>
+  </div>
+</header>
+
+<div class="seed-legend">
+  <div class="legend-item"><span class="legend-seed gold"></span> Wonder Effect / Goal Pole</div>
+  <div class="legend-item"><span class="legend-seed purple"></span> Secret / Hidden Wonder Flower</div>
+  <div class="legend-item"><span class="legend-seed red"></span> Royal Seed (defeat boss)</div>
+</div>
+<div class="controls">
+  <button class="btn" onclick="expandAll()">Expand All</button>
+  <button class="btn" onclick="collapseAll()">Collapse All</button>
+  <button class="btn danger" onclick="resetAll()">Reset Progress</button>
+</div>
+
+<div class="worlds-grid" id="worlds-grid"></div>
+
+<footer>Progress saved automatically in your browser.</footer>
+
+<script>
+// ─────────────────────────────────────────────
+//  Game Data
+//  Seeds: each entry = { how: "description" }
+//  Most courses: 2 seeds (Wonder Effect + Goal Pole)
+//  Challenges/Trials/KO Arenas: 1 seed
+// ─────────────────────────────────────────────
+// s(how)        = regular seed (gold)
+// sec(how)      = secret/hidden seed (purple)
+// roy(how)      = Royal Seed from defeating a boss (red)
+const s   = how => ({ how, secret: false, royal: false });
+const sec = how => ({ how, secret: true,  royal: false });
+const roy = how => ({ how, secret: false, royal: true  });
+
+const WORLDS = [
+  {
+    id: 'world1', name: 'Pipe-Rock Plateau', num: 'World 1',
+    color: '#5CB85C', emoji: '🌿',
+    courses: [
+      { id:'w1_1', name:'Welcome to the Flower Kingdom!', type:'course', diff:'★',
+        seeds:[s('Activate the Wonder Effect — causes pipes to come to life'), s('Reach the Goal Pole')] },
+      { id:'w1_2', name:'Piranha Plants on Parade', type:'course', diff:'★',
+        seeds:[s('Activate the Wonder Effect — causes the Piranha Plants to sing'), s('Reach the Goal Pole'),
+               sec('Find the secret Wonder Flower hidden elsewhere in the stage')] },
+      { id:'w1_3', name:'Scram, Skedaddlers!', type:'course', diff:'★',
+        seeds:[s('Activate the Wonder Effect — causes Super Stars to rain from the sky'), s('Reach the Goal Pole')] },
+      { id:'w1_4', name:'Bulrush Coming Through!', type:'course', diff:'★',
+        seeds:[s('Activate the Wonder Effect — summons a Wonder Bulrush herd'), s('Reach the Goal Pole'),
+               sec('Find the secret Wonder Flower hidden elsewhere in the stage')] },
+      { id:'w1_5', name:'Here Come the Hoppos', type:'course', diff:'★★',
+        seeds:[s('Activate the Wonder Effect — various Hoppos roll around including a Wonder Hoppo'), s('Reach the Goal Pole')] },
+      { id:'w1_6', name:'Rolla Koopa Derby', type:'course', diff:'★★',
+        seeds:[s('Activate the Wonder Effect — creates translucent Mienai Ashiba slopes'), s('Reach the Goal Pole')] },
+      { id:'w1_7', name:'Swamp Pipe Crawl', type:'course', diff:'★★★',
+        seeds:[s('Activate the Wonder Effect — activates Inchworm Pipes'), s('Reach the Goal Pole')] },
+      { id:'w1_8', name:"Angry Spikes and Sinkin' Pipes", type:'course', diff:'★★',
+        seeds:[s('Activate the Wonder Effect — Spikes dance and throw Spike Balls rhythmically'), s('Reach the Goal Pole')] },
+      { id:'w1_9', name:'Bulrush Express', type:'course', diff:'★★★★',
+        seeds:[s('Activate the Wonder Effect — summons a Wonder Bulrush herd'), s('Reach the Goal Pole'),
+               sec('Find the secret Wonder Flower hidden elsewhere in the stage')] },
+      { id:'w1_10', name:'Sproings in the Twilight Forest', type:'course', diff:'★★',
+        seeds:[s('Activate the Wonder Effect — elongates the player character like a Sproing'), s('Reach the Goal Pole')] },
+      { id:'w1_11', name:'Cosmic Hoppos', type:'course', diff:'★★★',
+        seeds:[s('Activate the Wonder Effect — launches the player into space to float freely'), s('Reach the Goal Pole')] },
+      { id:'w1_bc1', name:'Badge Challenge: Parachute Cap I', type:'challenge', diff:'★',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w1_bc2', name:'Badge Challenge: Wall-Climb Jump I', type:'challenge', diff:'★',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w1_bc3', name:'Expert Badge Challenge: Jet Run I', type:'challenge', diff:'★★★',
+        seeds:[s('Complete the Expert Badge Challenge')] },
+      { id:'w1_t1', name:'Wiggler Race: Mountaineering!', type:'trial', diff:'★',
+        seeds:[s('Complete the Wiggler Race trial')] },
+      { id:'w1_pal', name:'Pipe-Rock Plateau Palace', type:'palace', diff:'★★★',
+        seeds:[s('Complete the Palace — Wonder Effect causes pipes to fall'),
+               roy('Defeat Bowser Jr. to earn the Royal Seed')] },
+      { id:'w1_ko', name:'KO Arena: Pipe-Rock Rumble', type:'ko',
+        seeds:[s('Win the KO Arena match')] },
+      { id:'w1_bt1', name:'Break Time! Hurry, Hurry', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w1_bt2', name:'Break Time! Wonder Token Tunes', type:'break',
+        seeds:[s('Collect the Wonder Token in the minigame')] },
+      { id:'w1_bt3', name:'Break Time! Pop Up, Hoppo!', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w1_shop', name:'Poplin Shop', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from the Poplin Shop with flower coins')] },
+    ]
+  },
+  {
+    id: 'world2', name: 'Fluff-Puff Peaks', num: 'World 2',
+    color: '#64B5F6', emoji: '☁️',
+    courses: [
+      { id:'w2_1', name:'Outmaway Valley', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole'),
+               sec('Pass the Checkpoint Flag → find the two golden Warp Pipes near a large ice block → melt/break the ice → ground-pound the glowing patch to collect the hidden Wonder Flower (causes a massive snowman to roll right)')] },
+      { id:'w2_2', name:'Pokipede Pass', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_3', name:'Condarts Away!', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_4', name:'Pole Block Passage', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_5', name:"Up 'n' Down with Puffy Lifts", type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_6', name:'Jump! Jump! Jump!', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_7', name:'Countdown to Drop Down', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_8', name:'Fluff-Puff Peaks Flying Battleship', type:'course',
+        seeds:[s('Complete the Flying Battleship')] },
+      { id:'w2_9', name:'Cruising with Linking Lifts', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w2_pal', name:'Fluff-Puff Peaks Palace', type:'palace',
+        seeds:[s('Complete the Palace — Wonder Effect'),
+               roy('Defeat the boss to earn the Royal Seed')] },
+      { id:'w2_bc1', name:'Badge Challenge: Wall-Climb Jump 2', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w2_bc2', name:'Badge Challenge: Floating High Jump 1', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w2_bc3', name:'Expert Badge Challenge: Spring Feet 1', type:'challenge',
+        seeds:[s('Complete the Expert Badge Challenge')] },
+      { id:'w2_ko', name:'KO Arena: Fluff-Puff Kerfluff', type:'ko',
+        seeds:[s('Win the KO Arena match')] },
+      { id:'w2_sp', name:'Search Party: Puzzling Park', type:'search',
+        seeds:[sec('Find the hidden Wonder Seed in Puzzling Park')] },
+      { id:'w2_bt1', name:'Break Time!: Kick It, Outmaway', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w2_bt2', name:'Break Time!: Cloud Cover', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w2_bt3', name:'Break Time!: Zip-Go-Round', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w2_cab', name:'Fluff-Puff Peaks Cabin', type:'cabin',
+        seeds:[s('Visit the cabin and receive a Wonder Seed from the Poplin')] },
+      { id:'w2_shop', name:'Poplin Shop', type:'shop',
+        seeds:[s('Purchase Wonder Seed 1 from the Poplin Shop with flower coins'),
+               s('Purchase Wonder Seed 2 from the Poplin Shop with flower coins')] },
+    ]
+  },
+  {
+    id: 'world3', name: 'Shining Falls', num: 'World 3',
+    color: '#AB47BC', emoji: '💧',
+    courses: [
+      { id:'w3_1', name:'The Hoppycat Trial: Hop, Hop, and Awaaay', type:'trial',
+        seeds:[s('Activate & complete the Wonder Effect'), s('Complete the trial')] },
+      { id:'w3_2', name:'The Anglefish Trial: Ready, Aim, Fly!', type:'trial',
+        seeds:[s('Activate & complete the Wonder Effect'), s('Complete the trial')] },
+      { id:'w3_3', name:'The Midway Trial: Hop to It!', type:'trial',
+        seeds:[s('Activate & complete the Wonder Effect'), s('Complete the trial')] },
+      { id:'w3_sp', name:'Search Party: An Empty Park?', type:'search',
+        seeds:[sec('Find the hidden Wonder Seed in the seemingly empty park')] },
+      { id:'w3_4', name:'The Sharp Trial: Launch to Victory', type:'trial',
+        seeds:[s('Activate & complete the Wonder Effect'), s('Complete the trial')] },
+      { id:'w3_5', name:'The Sugarstar Trial: Across the Night Sky', type:'trial',
+        seeds:[s('Activate & complete the Wonder Effect'), s('Complete the trial')] },
+      { id:'w3_6', name:'The Final Trial: Zip Track Dash', type:'trial',
+        seeds:[s('Activate & complete the Wonder Effect'), s('Complete the trial')] },
+      { id:'w3_bc1', name:'POOF Badge Challenge: Crouching High Jump 1', type:'challenge',
+        seeds:[s('Complete the POOF Badge Challenge')] },
+      { id:'w3_bt1', name:'Break Time!: Unreachable Treasure?', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w3_bt2', name:'Break Time!: Watery Wonder Tokens', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w3_bt3', name:'Break Time!: Timer-Switch Climb', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w3_bt4', name:'Break Time!: Timer-Switch Dash', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w3_mph', name:"Master Poplin's House", type:'cabin',
+        seeds:[roy("Visit Master Poplin's House to receive the Royal Seed")] },
+      { id:'w3_shop', name:'Poplin Shop', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from the Poplin Shop with flower coins')] },
+    ]
+  },
+  {
+    id: 'world4', name: 'Sunbaked Desert', num: 'World 4',
+    color: '#FFA726', emoji: '☀️',
+    courses: [
+      { id:'w4_1', name:'Armads on the Roll', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_2', name:'The Desert Mystery', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_3', name:'Rolling-Ball Hall', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_4', name:'Ninji Jump Party', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_5', name:'Bloomps of the Desert Skies', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_6', name:'Valley Fulla Snootles', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_7', name:'Color-Switch Dungeon', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_8', name:'Secrets of Shova Mansion', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole'),
+               sec('Find the secret Wonder Flower hidden in the mansion')] },
+      { id:'w4_9', name:'Flight of the Bloomps', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w4_pal', name:'Sunbaked Desert Palace', type:'palace',
+        seeds:[s('Complete the Palace — Wonder Effect'),
+               roy('Defeat the boss to earn the Royal Seed')] },
+      { id:'w4_bc1', name:'Badge Challenge: Parachute Cap II', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w4_bc2', name:'Badge Challenge: Crouching High Jump II', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w4_bc3', name:'Expert Badge Challenge: Invisibility I', type:'challenge',
+        seeds:[s('Complete the Expert Badge Challenge')] },
+      { id:'w4_ko', name:'KO Arena: Sunbaked Skirmish', type:'ko',
+        seeds:[s('Win the KO Arena match')] },
+      { id:'w4_sp', name:'Search Party: Pipe Park', type:'search',
+        seeds:[sec('Find the hidden Wonder Seed in Pipe Park')] },
+      { id:'w4_bt1', name:'Break Time!: Treasure Vault', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w4_bt2', name:'Break Time!: Raise the Stage', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w4_bt3', name:'Break Time!: Revver Run', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w4_bt4', name:'Break Time!: Floating Wonder Tokens', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w4_bt5', name:'Break Time!: Bouncy Tunes', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w4_bt6', name:'Break Time!: Lights Out', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w4_house', name:'Sunbaked Desert House', type:'cabin',
+        seeds:[s('Visit the house and receive a Wonder Seed')] },
+      { id:'w4_shop1', name:'Poplin Shop 1', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from Poplin Shop 1 with flower coins')] },
+      { id:'w4_shop2', name:'Poplin Shop 2', type:'shop',
+        seeds:[s('Purchase Wonder Seed 1 from Poplin Shop 2 with flower coins'),
+               s('Purchase Wonder Seed 2 from Poplin Shop 2 with flower coins'),
+               s('Purchase Wonder Seed 3 from Poplin Shop 2 with flower coins')] },
+    ]
+  },
+  {
+    id: 'world5', name: 'Fungi Mines', num: 'World 5',
+    color: '#8D6E63', emoji: '🍄',
+    courses: [
+      { id:'w5_1', name:'Upshroom Downshroom', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_2', name:"Taily's Toxic Pond", type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_3', name:'Light-Switch Mansion', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_4', name:'Beware the Rifts', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_5', name:'An Uncharted Area: Wubba Ruins', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_6', name:'Another Uncharted Area: Swaying Ruins', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_7', name:'A Final Uncharted Area: Poison Ruins', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w5_bc1', name:'Badge Challenge: Grappling Vine I', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w5_ko', name:'KO Arena: Fungi Funk', type:'ko',
+        seeds:[s('Win the KO Arena match')] },
+      { id:'w5_bt1', name:'Break Time!: Tumble House', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w5_bt2', name:"Break Time!: Trottin' Piranha Plants", type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w5_cab', name:"Loyal Poplin's House", type:'cabin',
+        seeds:[s("Visit the Loyal Poplin's House and receive a Wonder Seed")] },
+      { id:'w5_res', name:'Operation Poplin Rescue', type:'rescue',
+        seeds:[s('Complete the Poplin Rescue operation'),
+               roy('Rescue all the Poplins to receive the Royal Seed')] },
+      { id:'w5_shop', name:'Poplin Shop', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from the Poplin Shop with flower coins')] },
+    ]
+  },
+  {
+    id: 'world6', name: 'Deep Magma Bog', num: 'World 6',
+    color: '#EF5350', emoji: '🌋',
+    courses: [
+      { id:'w6_1', name:'Where the Rrumbas Rule', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole'),
+               sec('Find the secret Wonder Flower hidden in the stage')] },
+      { id:'w6_2', name:'Raarghs in the Ruins', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w6_3', name:'Pull, Turn, Burn', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w6_4', name:'Deep Magma Bog Flying Battleship', type:'course',
+        seeds:[s('Complete the Flying Battleship')] },
+      { id:'w6_5', name:'Hot-Hot Hot!', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole'),
+               sec('Find the secret Wonder Flower hidden in the stage')] },
+      { id:'w6_6', name:'Wavy Ride through the Magma Tube', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w6_7', name:'Dragon Boneyard', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'w6_pal', name:'Deep Magma Bog Palace', type:'palace',
+        seeds:[s('Complete the Palace — Wonder Effect'),
+               roy('Defeat the boss to earn the Royal Seed')] },
+      { id:'w6_bc1', name:'Badge Challenge: Floating High Jump 2', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w6_bc2', name:'Badge Challenge: Boosting Spin Jump 2', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w6_bc3', name:'Badge Challenge: Grappling Vine 2', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'w6_xc1', name:'Expert Badge Challenge: Jet Run 2', type:'challenge',
+        seeds:[s('Complete the Expert Badge Challenge')] },
+      { id:'w6_xc2', name:'Expert Badge Challenge: Invisibility 2', type:'challenge',
+        seeds:[s('Complete the Expert Badge Challenge')] },
+      { id:'w6_xc3', name:'Expert Badge Challenge: Spring Feet 2', type:'challenge',
+        seeds:[s('Complete the Expert Badge Challenge')] },
+      { id:'w6_ko', name:'KO Arena: Magma Flare-Up', type:'ko',
+        seeds:[s('Win the KO Arena match')] },
+      { id:'w6_sp', name:'Search Party: Item Park', type:'search',
+        seeds:[sec('Find the hidden Wonder Seed in Item Park')] },
+      { id:'w6_bt1', name:'Break Time!: Hot-Hot Rocks', type:'break',
+        seeds:[s('Complete the Break Time! minigame')] },
+      { id:'w6_obs', name:'Deep Magma Bog Observatories 1–4', type:'observe',
+        seeds:[s('Complete Observatory 1'), s('Complete Observatory 2'),
+               s('Complete Observatory 3'), s('Complete Observatory 4')] },
+      { id:'w6_shop', name:'Poplin Shop', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from the Poplin Shop with flower coins')] },
+    ]
+  },
+  {
+    id: 'petalisles', name: 'Petal Isles', num: 'Petal Isles',
+    color: '#EC407A', emoji: '🌺',
+    courses: [
+      { id:'pi_1', name:'Leaping Smackerel', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_2', name:'Robbird Cove', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_3', name:'Blewbird Roost', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_4', name:'Downpour Uproar', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_5', name:'Jewel-Block Cave', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_6', name:'Petal Isles Flying Battleship', type:'course',
+        seeds:[s('Complete the Flying Battleship')] },
+      { id:'pi_7', name:'Gnawsher Lair', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_8', name:'Maw-Maw Mouthful', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_9', name:'Muncher Fields', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_bc1', name:'Badge Challenge: Dolphin Kick I', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'pi_bc2', name:'Badge Challenge: Dolphin Kick II', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'pi_bc3', name:'Badge Challenge: Boosting Spin Jump I', type:'challenge',
+        seeds:[s('Complete the Badge Challenge')] },
+      { id:'pi_ko', name:'KO Arena: Petal Meddle', type:'ko',
+        seeds:[s('Win the KO Arena match')] },
+      { id:'pi_wr1', name:'Wiggler Race: Swimming!', type:'trial',
+        seeds:[s('Complete the Wiggler Race')] },
+      { id:'pi_wr2', name:'Wiggler Race: Spelunking!', type:'trial',
+        seeds:[s('Complete the Wiggler Race')] },
+      { id:'pi_shop1', name:'Poplin Shop 1', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from Poplin Shop 1 with flower coins')] },
+      { id:'pi_shop2', name:'Poplin Shop 2', type:'shop',
+        seeds:[s('Purchase a Wonder Seed from Poplin Shop 2 with flower coins')] },
+      { id:'pi_c1', name:'Missile Meg Mayhem', type:'castle',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_c2', name:'High-Voltage Gauntlet', type:'castle',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_c3', name:"Evade the Seeker Bullet Bills!", type:'castle',
+        seeds:[s('Activate the Wonder Effect'), s('Reach the Goal Pole')] },
+      { id:'pi_boss', name:"KnuckleFest Bowser's Blazing Beats", type:'castle',
+        seeds:[s('Activate the Wonder Effect'), s('Defeat Bowser')] },
+      { id:'pi_final', name:"The Final Battle! Bowser's Rage Stage", type:'boss',
+        seeds:[s('Complete the Wonder Effect'), roy("Defeat Bowser to receive the Royal Seed")] },
+    ]
+  },
+  {
+    id: 'special', name: 'Special World', num: 'Special ★',
+    color: '#FFD700', emoji: '⭐',
+    courses: [
+      { id:'sw_1', name:'Pipe-Rock Plateau Special: Bounce, Bounce, Bounce', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_2', name:'Fluff-Puff Peaks Special: Climb to the Beat', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_3', name:'Shining Falls Special: Triple Threat Deluge', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_4', name:'Sunbaked Desert Special: Pole Block Allure', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_5', name:'Fungi Mines Special: Dangerous Donut Ride', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_6', name:'Deep Magma Bog Special: Solar Roller', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_7', name:'Petal Isles Special: Way of the Goomba', type:'course',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the special course')] },
+      { id:'sw_semi', name:'The Semifinal Test: Piranha Plant Reprise', type:'special',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the Semifinal Test')] },
+      { id:'sw_final', name:'The Final Test: Wonder Gauntlet', type:'special',
+        seeds:[s('Activate the Wonder Effect'), s('Complete the Final Test')] },
+      { id:'sw_ff', name:'The Final-Final Test', type:'special',
+        seeds:[s('Complete the Final-Final Test')] },
+    ]
+  }
+];
+
+// ── State ──────────────────────────────────────
+const STORAGE_KEY = 'mw_tracker_v1';
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState(); // { [courseId_seedIndex]: true }
+
+function seedKey(courseId, seedIdx) {
+  return `${courseId}_${seedIdx}`;
+}
+
+function isCollected(courseId, seedIdx) {
+  return !!state[seedKey(courseId, seedIdx)];
+}
+
+function toggleSeed(courseId, seedIdx) {
+  const k = seedKey(courseId, seedIdx);
+  state[k] = !state[k];
+  saveState(state);
+  renderWorld(courseId.split('_')[0].replace(/\d/g, m => m));
+  updateOverall();
+}
+
+// ── Render ─────────────────────────────────────
+const typeLabel = {
+  course: 'Course', boss: 'Boss', challenge: 'Badge',
+  trial: 'Trial', ko: 'KO Arena', special: 'Special', search: 'Search',
+  palace: 'Palace', break: 'Break!', cabin: 'Cabin', shop: 'Shop', rescue: 'Rescue', observe: 'Observe', castle: 'Castle'
+};
+const typeClass = {
+  course: 'type-course', boss: 'type-boss', challenge: 'type-challenge',
+  trial: 'type-trial', ko: 'type-ko', special: 'type-special', search: 'type-search',
+  palace: 'type-palace', break: 'type-break', cabin: 'type-cabin', shop: 'type-shop',
+  rescue: 'type-rescue', observe: 'type-observe', castle: 'type-castle'
+};
+
+function worldSeedCounts(world) {
+  let total = 0, collected = 0;
+  for (const c of world.courses) {
+    for (let i = 0; i < c.seeds.length; i++) {
+      if (c.seeds[i].royal) continue; // Royal Seeds tracked but not counted
+      total++;
+      if (isCollected(c.id, i)) collected++;
+    }
+  }
+  return { total, collected };
+}
+
+function totalCounts() {
+  let total = 0, collected = 0;
+  for (const w of WORLDS) {
+    const c = worldSeedCounts(w);
+    total += c.total;
+    collected += c.collected;
+  }
+  return { total, collected };
+}
+
+function buildWorldCard(world) {
+  const card = document.createElement('div');
+  card.className = 'world-card';
+  card.id = 'card_' + world.id;
+  card.style.setProperty('--world-color', world.color);
+
+  const { total, collected } = worldSeedCounts(world);
+  const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+  if (collected === total) card.classList.add('complete');
+
+  // Header
+  card.innerHTML = `
+    <div class="world-header" onclick="toggleCard('${world.id}')">
+      <span class="world-emoji">${world.emoji}</span>
+      <div class="world-title-group">
+        <div class="world-number">${world.num}</div>
+        <div class="world-name">${world.name}<span class="world-complete-badge">✓ Complete</span></div>
+      </div>
+      <div class="world-progress-text">
+        <div class="frac">${collected}<span style="opacity:0.4">/${total}</span></div>
+        <div class="pct">${pct}%</div>
+      </div>
+      <span class="world-chevron">▼</span>
+    </div>
+    <div class="world-bar-wrap">
+      <div class="world-bar-bg">
+        <div class="world-bar-fill" style="width:${pct}%"></div>
+      </div>
+    </div>
+    <div class="course-list" id="courses_${world.id}">
+      ${world.courses.map(c => buildCourseRow(c)).join('')}
+    </div>
+  `;
+
+  return card;
+}
+
+function buildCourseRow(course) {
+  const allCollected = course.seeds.every((_, i) => isCollected(course.id, i));
+  const seedBtns = course.seeds.map((seed, i) => {
+    const collected = isCollected(course.id, i) ? 'collected' : '';
+    const secretCls = seed.royal ? 'royal-seed' : seed.secret ? 'secret-seed' : '';
+    const label = course.seeds.length > 1 ? `Seed ${i+1}: ${seed.how}` : seed.how;
+    return `<button class="seed-btn ${secretCls} ${collected}" title="${label}"
+              onclick="toggleSeed('${course.id}', ${i})"
+              aria-label="Seed ${i+1}: ${collected ? 'collected' : 'not collected'}"></button>`;
+  }).join('');
+
+  return `
+    <div class="course-row ${allCollected ? 'all-collected' : ''}" id="row_${course.id}">
+      <span class="course-type-badge ${typeClass[course.type]}">${typeLabel[course.type]}</span>
+      <span class="course-name">${course.name}${course.diff ? `<span class="diff-stars">${course.diff}</span>` : ''}</span>
+      <div class="seeds-wrap">${seedBtns}</div>
+    </div>
+  `;
+}
+
+function renderWorld(worldId) {
+  // Re-render just the affected world card
+  const world = WORLDS.find(w => w.id === worldId);
+  if (!world) { renderAll(); return; }
+  const existing = document.getElementById('card_' + worldId);
+  if (!existing) return;
+  const newCard = buildWorldCard(world);
+  // Preserve open state
+  if (existing.classList.contains('open')) newCard.classList.add('open');
+  existing.replaceWith(newCard);
+}
+
+function renderAll() {
+  const grid = document.getElementById('worlds-grid');
+  grid.innerHTML = '';
+  for (const world of WORLDS) {
+    grid.appendChild(buildWorldCard(world));
+  }
+  updateOverall();
+}
+
+function updateOverall() {
+  const { total, collected } = totalCounts();
+  const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+  document.getElementById('total-collected').textContent = collected;
+  document.getElementById('total-pct').textContent = pct + '%';
+  document.getElementById('overall-bar').style.width = pct + '%';
+}
+
+// ── Interactions ───────────────────────────────
+function toggleCard(worldId) {
+  const card = document.getElementById('card_' + worldId);
+  card.classList.toggle('open');
+}
+
+function expandAll() {
+  document.querySelectorAll('.world-card').forEach(c => c.classList.add('open'));
+}
+
+function collapseAll() {
+  document.querySelectorAll('.world-card').forEach(c => c.classList.remove('open'));
+}
+
+function resetAll() {
+  if (!confirm('Reset all progress? This cannot be undone.')) return;
+  state = {};
+  saveState(state);
+  renderAll();
+}
+
+// ── Re-render a world after toggle ─────────────
+// Override toggleSeed to use world id properly
+window.toggleSeed = function(courseId, seedIdx) {
+  const k = seedKey(courseId, seedIdx);
+  state[k] = !state[k];
+  saveState(state);
+
+  // Find which world this course belongs to
+  const world = WORLDS.find(w => w.courses.some(c => c.id === courseId));
+  if (world) renderWorld(world.id);
+  updateOverall();
+};
+
+// ── Init ───────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>

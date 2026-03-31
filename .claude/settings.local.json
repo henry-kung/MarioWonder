@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.mariowiki.com)",
+      "WebFetch(domain:gamerant.com)",
+      "WebFetch(domain:www.nintendolife.com)",
+      "WebFetch(domain:game8.co)",
+      "WebFetch(domain:mariopartylegacy.com)"
+    ]
+  }
+}
