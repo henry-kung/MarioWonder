@@ -157,10 +157,39 @@
       color: var(--gold);
     }
 
+    .btn.active {
+      background: rgba(255,215,0,0.12);
+      border-color: rgba(255,215,0,0.4);
+      color: var(--gold);
+    }
+
     .btn.danger:hover {
       background: rgba(255,80,80,0.12);
       border-color: rgba(255,80,80,0.4);
       color: #ff6060;
+    }
+
+    .mark-all-btn {
+      padding: 0.18em 0.55em;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .mark-all-btn:hover {
+      background: rgba(255,215,0,0.1);
+      border-color: rgba(255,215,0,0.35);
+      color: var(--gold);
+    }
+    .world-card.complete .mark-all-btn {
+      opacity: 0.35;
+      pointer-events: none;
     }
 
     /* ── World Grid ── */
@@ -322,7 +351,9 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
       flex-shrink: 0;
-      width: 52px;
+      min-width: 52px;
+      width: fit-content;
+      white-space: nowrap;
       text-align: center;
     }
 
@@ -729,7 +760,7 @@
   <p class="subtitle">Super Mario Bros. Wonder</p>
   <div class="overall-stats">
     <div class="stat-block">
-      <div class="stat-number" id="total-collected">0</div>
+      <div class="stat-number" id="total-collected">0<span id="total-total" style="opacity:0.4;font-size:1.2rem"></span></div>
       <div class="stat-label">Seeds Found</div>
     </div>
     <div class="overall-bar-wrap">
@@ -740,6 +771,10 @@
     <div class="stat-block">
       <div class="stat-number" id="total-pct">0%</div>
       <div class="stat-label">Complete</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-number" id="worlds-done">0<span id="worlds-total" style="opacity:0.4;font-size:1.2rem"></span></div>
+      <div class="stat-label">Worlds Done</div>
     </div>
   </div>
 </header>
@@ -752,6 +787,7 @@
 <div class="controls">
   <button class="btn" onclick="expandAll()">Expand All</button>
   <button class="btn" onclick="collapseAll()">Collapse All</button>
+  <button class="btn" id="hide-completed-btn" onclick="toggleHideCompleted()">Hide Completed</button>
   <button class="btn danger" onclick="resetAll()">Reset Progress</button>
 </div>
 
@@ -902,11 +938,13 @@ const WORLDS = [
       { id:'w3_bt2', name:'Break Time!: Watery Wonder Tokens', type:'break',
         seeds:[s('Complete the Break Time! minigame')] },
       { id:'w3_bt3', name:'Break Time!: Timer-Switch Climb', type:'break',
-        seeds:[s('Complete the Break Time! minigame'), s('Complete the Break Time! minigame — second seed')] },
+        seeds:[s('Complete the Break Time! minigame')] },
       { id:'w3_bt4', name:'Break Time!: Timer-Switch Dash', type:'break',
         seeds:[s('Complete the Break Time! minigame')] },
       { id:'w3_mph', name:"Master Poplin's House", type:'cabin',
-        seeds:[roy("Visit Master Poplin's House to receive the Royal Seed")] },
+        seeds:[s("Visit Master Poplin's House to receive a Wonder Seed")] },
+      { id:'w3_rsm', name:'Royal Seed Mansion', type:'cabin',
+        seeds:[roy('Visit the Royal Seed Mansion to receive the Shining Falls Royal Seed')] },
       { id:'w3_shop', name:'Poplin Shop', type:'shop',
         seeds:[s('Purchase a Wonder Seed from the Poplin Shop with flower coins')] },
     ]
@@ -1217,6 +1255,7 @@ function buildWorldCard(world) {
         <div class="frac">${collected}<span style="opacity:0.4">/${total}</span></div>
         <div class="pct">${pct}%</div>
       </div>
+      <button class="mark-all-btn" onclick="event.stopPropagation(); markWorldDone('${world.id}')" title="Mark all as collected">✓ All</button>
       <span class="world-chevron">▼</span>
     </div>
     <div class="world-bar-wrap">
@@ -1244,7 +1283,7 @@ function buildCourseRow(course) {
   }).join('');
 
   return `
-    <div class="course-row ${allCollected ? 'all-collected' : ''}" id="row_${course.id}">
+    <div class="course-row ${allCollected ? 'all-collected' : ''}" id="row_${course.id}"${allCollected && hideCompleted ? ' style="display:none"' : ''}>
       <span class="course-type-badge ${typeClass[course.type]}">${typeLabel[course.type]}</span>
       <span class="course-name">${course.name}${course.diff ? `<span class="diff-stars">${course.diff}</span>` : ''}</span>
       <div class="seeds-wrap">${seedBtns}</div>
@@ -1276,12 +1315,24 @@ function renderAll() {
 function updateOverall() {
   const { total, collected } = totalCounts();
   const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
-  document.getElementById('total-collected').textContent = collected;
+  const worldsDone = WORLDS.filter(w => {
+    const c = worldSeedCounts(w);
+    return c.total > 0 && c.collected === c.total;
+  }).length;
+
+  const collectedEl = document.getElementById('total-collected');
+  // Replace only the text node (first child), leaving the span intact
+  collectedEl.firstChild.textContent = collected;
+  document.getElementById('total-total').textContent = '/' + total;
+  document.getElementById('worlds-done').firstChild.textContent = worldsDone;
+  document.getElementById('worlds-total').textContent = '/' + WORLDS.length;
   document.getElementById('total-pct').textContent = pct + '%';
   document.getElementById('overall-bar').style.width = pct + '%';
 }
 
 // ── Interactions ───────────────────────────────
+let hideCompleted = false;
+
 function toggleCard(worldId) {
   const card = document.getElementById('card_' + worldId);
   card.classList.toggle('open');
@@ -1300,6 +1351,27 @@ function resetAll() {
   state = {};
   saveState(state);
   renderAll();
+}
+
+function toggleHideCompleted() {
+  hideCompleted = !hideCompleted;
+  const btn = document.getElementById('hide-completed-btn');
+  btn.classList.toggle('active', hideCompleted);
+  btn.textContent = hideCompleted ? 'Show Completed' : 'Hide Completed';
+  for (const world of WORLDS) renderWorld(world.id);
+}
+
+function markWorldDone(worldId) {
+  const world = WORLDS.find(w => w.id === worldId);
+  if (!world) return;
+  for (const c of world.courses) {
+    for (let i = 0; i < c.seeds.length; i++) {
+      state[seedKey(c.id, i)] = true;
+    }
+  }
+  saveState(state);
+  renderWorld(worldId);
+  updateOverall();
 }
 
 // ── Re-render a world after toggle ─────────────
